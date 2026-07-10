@@ -7,3 +7,5 @@
 ## Dashboard UI
 
 ## YOLOv8 Detection
+
+## Live Video Streaming
