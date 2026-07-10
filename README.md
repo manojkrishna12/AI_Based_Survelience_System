@@ -9,3 +9,5 @@
 ## YOLOv8 Detection
 
 ## Live Video Streaming
+
+## Person Detection
