@@ -5,3 +5,5 @@
 ## User Authentication
 
 ## Dashboard UI
+
+## YOLOv8 Detection
