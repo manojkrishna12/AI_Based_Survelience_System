@@ -17,3 +17,5 @@
 ## Camera Management
 
 ## Performance Optimization
+
+## Snapshot Capture
