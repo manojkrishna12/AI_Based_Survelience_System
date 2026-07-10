@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0 animate__animated animate__fadeIn">
+
+    <!-- Header title -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 text-dark fw-bold">Camera Management Settings</h4>
+            <p class="text-muted mb-0 small">Add, update, or remove physical webcams, network streams, and virtual channels.</p>
+        </div>
+        <div>
+            <button class="btn btn-primary text-white fw-semibold" data-bs-toggle="modal" data-bs-target="#addCameraModal">
+                <i class="fas fa-plus me-2"></i>Add Camera Feed
+            </button>
+        </div>
+    </div>
+
+    <!-- Cameras Grid List -->
+    <div class="row g-4">
+        {% for cam in cameras %}
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card border border-light-subtle shadow-sm rounded-3 h-100">
+                    <div class="card-body p-4 d-flex flex-direction-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="bg-primary-subtle text-primary rounded p-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 1.25rem;">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <span class="badge rounded-pill {% if cam.status == 'active' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %} px-3 py-1">
+                                    {{ cam.status|capitalize }}
+                                </span>
+                            </div>
+                            
+                            <h5 class="card-title fw-bold text-dark mb-1">{{ cam.name }}</h5>
+                            <p class="text-muted small mb-3 font-monospace" style="font-size: 0.78rem;">ID: {{ cam.id }} | Registered: {{ cam.created_at.split(' ')[0] }}</p>
+                            
+                            <div class="mb-4 bg-light p-3 border border-light-subtle rounded-3">
+                                <label class="small text-muted fw-bold d-block mb-1">Source Stream Path</label>
+                                <code class="text-dark font-monospace fw-semibold">{{ cam.source }}</code>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between gap-2 border-top pt-3">
+                            <button 
+                                class="btn btn-sm btn-outline-primary flex-grow-1 fw-semibold" 
+                                onclick="openEditModal('{{ cam.id }}', '{{ cam.name|escape }}', '{{ cam.source|escape }}', '{{ cam.status }}')"
+                            >
+                                <i class="fas fa-edit me-1"></i> Edit
+                            </button>
+                            
+                            <form action="/cameras/delete/{{ cam.id }}" method="POST" class="flex-grow-1" onsubmit="return confirm('Deleting this camera will also permanently wipe its historical alert entries. Proceed?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-semibold">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5 bg-white border border-light-subtle rounded-3 text-muted">
+                    <i class="fas fa-video-slash fa-3x mb-3 text-muted text-opacity-35"></i>
+                    <h5 class="fw-bold">No Channels Found</h5>
+                    <p class="mb-3">Start by registering your first physical camera or simulated stream.</p>
+                    <button class="btn btn-primary text-white fw-semibold btn-sm px-4" data-bs-toggle="modal" data-bs-target="#addCameraModal">
+                        Register Channel
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- MODAL: ADD CAMERA -->
+<div class="modal fade" id="addCameraModal" tabindex="-1" aria-labelledby="addCameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{{ url_for('dashboard.camera_add') }}" method="POST">
+                <div class="modal-header border-bottom py-3 px-4">
+                    <h5 class="modal-title fw-bold" id="addCameraModalLabel">Register New Camera Channel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="add_name" class="form-label small fw-bold">Camera Label/Location</label>
+                        <input type="text" class="form-control" id="add_name" name="name" placeholder="e.g., Front Gate Camera" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="add_source" class="form-label small fw-bold">Stream Path / Index</label>
+                        <input type="text" class="form-control" id="add_source" name="source" placeholder="e.g., 0 (Webcam), rtsp://url, or 'simulated'" required>
+                        <div class="form-text text-muted" style="font-size: 0.75rem;">
+                            Type <code>0</code> or <code>1</code> for local hardware webcams. Type <code>simulated</code> to deploy the dynamic security feeds loop without physical webcams.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="add_status" class="form-label small fw-bold">Default Status</label>
+                        <select name="status" id="add_status" class="form-select">
+                            <option value="active">Active (Looping)</option>
+                            <option value="inactive">Inactive (Muted)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary text-white px-3 fw-semibold">Save Channel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: EDIT CAMERA -->
+<div class="modal fade" id="editCameraModal" tabindex="-1" aria-labelledby="editCameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form id="editCameraForm" action="" method="POST">
+                <div class="modal-header border-bottom py-3 px-4">
+                    <h5 class="modal-title fw-bold" id="editCameraModalLabel">Edit Channel Configurations</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label small fw-bold">Camera Label/Location</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_source" class="form-label small fw-bold">Stream Path / Index</label>
+                        <input type="text" class="form-control" id="edit_source" name="source" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label small fw-bold">System Status</label>
+                        <select name="status" id="edit_status" class="form-select">
+                            <option value="active">Active (Looping)</option>
+                            <option value="inactive">Inactive (Muted)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2 px-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary text-white px-3 fw-semibold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    /**
+     * Opens the Edit Camera Modal with prefilled camera data values
+     */
+    def_camera_edit = "/cameras/edit/";
+    
+    function openEditModal(id, name, source, status) {
+        document.getElementById('editCameraForm').action = def_camera_edit + id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_source').value = source;
+        document.getElementById('edit_status').value = status;
+        
+        const editModal = new bootstrap.Modal(document.getElementById('editCameraModal'));
+        editModal.show();
+    }
+</script>
+{% endblock %}

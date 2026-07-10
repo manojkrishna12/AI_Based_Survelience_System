@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Surveillance System</title>
+    
+    <!-- Meta SEO Tags -->
+    <meta name="description" content="AI Based Smart Surveillance System for human, face, motion, intrusion, and fire detection. Built with Python, Flask, OpenCV, and YOLOv8.">
+    
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- FontAwesome Icons CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <!-- Animate.css CDN (for entrance micro-animations) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    
+    <!-- Custom Theme CSS -->
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <div id="wrapper">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-shield-halved"></i>
+                <h5>GuardAI Monitor</h5>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="{% if request.path == '/' or request.path == '/dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.index') }}">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="{% if '/camera/' in request.path %}active{% endif %}">
+                    <!-- Default to Camera 1 (Webcam) or dynamic lookups -->
+                    <a href="/camera/1">
+                        <i class="fa-solid fa-video"></i>
+                        <span>Live Monitor</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/alerts' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.alerts_history') }}">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Detections Log</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/cameras' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.cameras_manage') }}">
+                        <i class="fa-solid fa-gears"></i>
+                        <span>Camera Settings</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Log Out</span>
+                </a>
+            </div>
+        </nav>
+        
+        <!-- Main Application Wrapper -->
+        <div id="content-wrapper">
+            <!-- Top Header Navbar -->
+            <header class="main-navbar">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="mb-0 text-dark font-weight-bold">
+                        <i class="fa-regular fa-calendar-check text-primary me-2"></i>
+                        AI Security Surveillance Center
+                    </h5>
+                </div>
+                
+                <div class="d-flex align-items-center gap-4">
+                    <!-- System Health Badge -->
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-2 px-3">
+                        <i class="fa-solid fa-circle-nodes me-2"></i>AI Engine: ONLINE
+                    </span>
+                    
+                    <!-- User Account Dropdown -->
+                    <div class="dropdown">
+                        <a class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle gap-2" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-weight: 600;">
+                                {{ session.get('username', 'U')[0].upper() }}
+                            </div>
+                            <div class="text-start d-none d-sm-block">
+                                <div class="small fw-bold" style="line-height: 1;">{{ session.get('username', 'User') }}</div>
+                                <span class="text-muted" style="font-size: 0.72rem;">{{ session.get('role', 'operator')|capitalize }}</span>
+                            </div>
+                        </a>
+                        
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('dashboard.cameras_manage') }}"><i class="fa-solid fa-sliders me-2 text-muted"></i>Configure Cameras</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-power-off me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dynamic Subpage Content -->
+            <main class="main-content">
+                <!-- Flask Flash Messaging System -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+                                <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close" onclick="this.parentElement.remove()"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Toast feedback elements (dynamically populated) -->
+    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;"></div>
+
+</body>
+</html>

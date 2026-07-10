@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0 animate__animated animate__fadeIn">
+
+    <!-- Dashboard Title/Greetings -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 text-dark fw-bold">Command Center Dashboard</h4>
+            <p class="text-muted mb-0 small">Real-time object classification and security incident mapping.</p>
+        </div>
+        <div class="text-end">
+            <span class="text-muted small fw-semibold">Local Server System Time:</span>
+            <div id="clock-display" class="fw-bold font-monospace" style="font-size: 0.95rem;">--:--:--</div>
+        </div>
+    </div>
+
+    <!-- 4 Core Metrics Widgets -->
+    <div class="row g-4 mb-4">
+        <!-- 1. Total Incidents Today -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stats-card">
+                <div class="stats-data">
+                    <h3 id="widget-alerts-today">{{ stats.total_alerts }}</h3>
+                    <p>Total Incidents Logged</p>
+                </div>
+                <div class="stats-icon icon-red">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 2. Active Camera Feeds -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stats-card">
+                <div class="stats-data">
+                    <h3>{{ stats.active_cameras }} / {{ stats.total_cameras }}</h3>
+                    <p>Active Camera Feeds</p>
+                </div>
+                <div class="stats-icon icon-blue">
+                    <i class="fa-solid fa-video"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 3. Human Detections -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stats-card">
+                <div class="stats-data">
+                    <h3>{{ stats.alerts_by_type.get('Human', 0) }}</h3>
+                    <p>Human Detections</p>
+                </div>
+                <div class="stats-icon icon-green">
+                    <i class="fa-solid fa-person-running"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 4. Fire / Smoke Threat Detections -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stats-card">
+                <div class="stats-data">
+                    <h3>{{ stats.alerts_by_type.get('Fire/Smoke', 0) }}</h3>
+                    <p>Fire/Smoke Alerts</p>
+                </div>
+                <div class="stats-icon icon-orange">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Feeds Section -->
+    <div class="row g-4 mb-4">
+        <!-- Line Chart: Alerts Distribution -->
+        <div class="col-12 col-xl-8">
+            <div class="dashboard-card">
+                <div class="dashboard-card-title">
+                    <span><i class="fa-solid fa-chart-line text-primary me-2"></i>Incident Frequency Trend</span>
+                    <span class="badge bg-light text-muted fw-normal">Hourly (Last 24 Hours)</span>
+                </div>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="hourlyDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Doughnut Chart: Alert type stats -->
+        <div class="col-12 col-xl-4">
+            <div class="dashboard-card">
+                <div class="dashboard-card-title">
+                    <span><i class="fa-solid fa-chart-pie text-primary me-2"></i>Alert Type Breakdown</span>
+                </div>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="alertTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Camera Links and Live Feed Logger -->
+    <div class="row g-4">
+        <!-- Camera Channel Selector -->
+        <div class="col-12 col-lg-6 col-xl-5">
+            <div class="dashboard-card">
+                <div class="dashboard-card-title mb-3">
+                    <span><i class="fa-solid fa-circle-play text-primary me-2"></i>Monitored Channels</span>
+                </div>
+                <div class="list-group list-group-flush gap-2">
+                    {% for cam in cameras %}
+                        <a href="/camera/{{ cam.id }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border rounded border-light-subtle">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary-subtle text-primary rounded p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-dark fw-bold">{{ cam.name }}</h6>
+                                    <span class="text-muted small font-monospace" style="font-size: 0.72rem;">Source: {{ cam.source }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                {% if cam.status == 'active' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary rounded-pill">Offline</span>
+                                {% endif %}
+                                <i class="fas fa-chevron-right text-muted ms-3 small"></i>
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-video-slash fa-2x mb-2 text-opacity-25"></i>
+                            <p class="mb-0">No cameras registered. Go to Camera Settings to add one.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Real-Time Logs -->
+        <div class="col-12 col-lg-6 col-xl-7">
+            <div class="dashboard-card">
+                <div class="dashboard-card-title">
+                    <span><i class="fa-solid fa-bell-ring text-primary me-2"></i>Live Alert Monitor Stream</span>
+                    <span class="badge bg-danger animate__pulse rec-active rounded-pill" style="font-size: 0.7rem; font-weight: 700;">
+                        <i class="fas fa-circle me-1 small"></i>LIVE
+                    </span>
+                </div>
+                
+                <div class="recent-alert-list" id="recent-alerts-list">
+                    {% for alert in recent_alerts %}
+                        <!-- Render item with standard tags -->
+                        <div class="recent-alert-item" data-alert-id="{{ alert.id }}">
+                            <img class="alert-thumbnail" src="{{ alert.image_path if alert.image_path else '/static/images/placeholder.jpg' }}" alt="Capture" onerror="this.src='https://placehold.co/60x60/0f172a/ffffff?text=Capture'">
+                            <div class="alert-info-mini">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0 text-dark fw-bold">{{ alert.camera_name if alert.camera_name else 'System Feed' }}</h6>
+                                    <span class="badge alert-badge badge-{{ alert.alert_type.lower().replace('/', '-') }}">{{ alert.alert_type }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <p class="mb-0 text-muted" style="font-size: 0.75rem;">Confidence: {{ (alert.confidence * 100)|round(0)|int }}%</p>
+                                    <!-- Using simple formatting fallback if date helper not initialized yet -->
+                                    <span class="alert-time text-muted font-monospace">{{ alert.created_at.split(' ')[1].split('.')[0] if ' ' in alert.created_at else alert.created_at }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted" id="no-alerts-placeholder">
+                            <i class="fa-solid fa-shield-check fa-3x mb-3 text-success text-opacity-30"></i>
+                            <p class="mb-0">All systems secure. No threats detected in recent logs.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Clock JavaScript -->
+<script>
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        document.getElementById('clock-display').textContent = timeString;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+</script>
+
+<!-- Load dashboard dependencies -->
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

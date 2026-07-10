@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0 animate__animated animate__fadeIn" id="camera-view-container" data-camera-id="{{ camera.id }}">
+
+    <!-- Title and Camera Selector -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 text-dark fw-bold">Live Camera Feed</h4>
+            <p class="text-muted mb-0 small">Monitoring: <strong class="text-primary">{{ camera.name }}</strong> (Channel ID: {{ camera.id }})</p>
+        </div>
+        
+        <!-- Dropdown to quickly switch feeds -->
+        <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle fw-semibold" type="button" id="cameraSelectDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-video me-2"></i>Switch Camera Feed
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2" aria-labelledby="cameraSelectDropdown">
+                {% for cam in cameras %}
+                    <li>
+                        <a class="dropdown-item py-2 {% if cam.id == camera.id %}active{% endif %}" href="/camera/{{ cam.id }}">
+                            {{ cam.name }} {% if cam.source == 'simulated' %}(Mock){% endif %}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main View layout -->
+    <div class="row g-4">
+        <!-- Live Video stream column -->
+        <div class="col-12 col-xl-8">
+            <div class="camera-monitor-wrapper">
+                <!-- Status badges overlay -->
+                <div class="camera-status-overlay">
+                    <span class="status-dot rec-active"></span>
+                    <span>FEED: LIVE</span>
+                    <span class="text-muted">|</span>
+                    <span>{{ camera.name }}</span>
+                </div>
+                
+                <!-- Main feed JPEG rendering stream -->
+                <img 
+                    class="camera-monitor-feed" 
+                    src="/camera/video_feed/{{ camera.id }}" 
+                    alt="AI Security Stream" 
+                    onerror="this.src='https://placehold.co/640x480/0f172a/ffffff?text=Stream+Disconnected'"
+                >
+            </div>
+            
+            <!-- Quick manual snapshots actions -->
+            <div class="d-flex justify-content-between align-items-center mt-3 bg-white p-3 border border-light-subtle rounded-3">
+                <div>
+                    <span class="text-muted small fw-medium">Feed Source Path:</span>
+                    <code class="ms-2 text-dark font-monospace fw-bold">{{ camera.source }}</code>
+                </div>
+                <div>
+                    <button id="btn-capture-screenshot" class="btn btn-primary text-white px-4 fw-semibold">
+                        <i class="fa-solid fa-camera me-2"></i>Capture Screenshot
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controls & AI parameters column -->
+        <div class="col-12 col-xl-4">
+            <div class="camera-controls-card">
+                <h5 class="fw-bold border-bottom pb-3 mb-4">
+                    <i class="fa-solid fa-sliders text-primary me-2"></i>AI Analysis Control Panel
+                </h5>
+                
+                <div class="toggle-switch-group">
+                    <!-- 1. Human Detection Toggle -->
+                    <div class="toggle-switch-item">
+                        <div class="toggle-switch-info">
+                            <h6>Human Detection</h6>
+                            <p>YOLOv8 deep learning model checks for human profiles.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="toggle-human" {% if states.human %}checked{% endif %}>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. Face Detection Toggle -->
+                    <div class="toggle-switch-item">
+                        <div class="toggle-switch-info">
+                            <h6>Face Recognition/Detection</h6>
+                            <p>OpenCV Haar Cascades parses for facial features.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="toggle-face" {% if states.face %}checked{% endif %}>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. Motion Detection Toggle -->
+                    <div class="toggle-switch-item">
+                        <div class="toggle-switch-info">
+                            <h6>Motion Detection</h6>
+                            <p>Classic frame-differencing checks for background displacement.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="toggle-motion" {% if states.motion %}checked{% endif %}>
+                        </div>
+                    </div>
+                    
+                    <!-- 4. Intrusion Detection Toggle -->
+                    <div class="toggle-switch-item">
+                        <div class="toggle-switch-info">
+                            <h6>Intrusion Detection Zone</h6>
+                            <p>Triggers warning when humans enter the red exclusion zone.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="toggle-intrusion" {% if states.intrusion %}checked{% endif %}>
+                        </div>
+                    </div>
+                    
+                    <!-- 5. Fire & Smoke Detection Toggle -->
+                    <div class="toggle-switch-item">
+                        <div class="toggle-switch-info">
+                            <h6>Fire & Smoke Detection</h6>
+                            <p>HSV fire chromaticity thresholding looks for smoke/flame ranges.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="toggle-fire" {% if states.fire %}checked{% endif %}>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notice footer inside controls -->
+                <div class="alert alert-secondary bg-light text-muted border-0 small mt-4 mb-0">
+                    <i class="fa-solid fa-circle-info me-2 text-primary"></i>
+                    <strong>Academic Tip:</strong> Adjusting toggles calls APIs to adjust OpenCV frame looping buffers dynamically. When Intrusion is enabled, the virtual rectangle overlays on the active feed.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Camera page logic dependencies -->
+<script src="/static/js/camera.js"></script>
+{% endblock %}
